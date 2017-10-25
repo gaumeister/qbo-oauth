@@ -15,6 +15,7 @@ const INTUIT_DISCONNECT_URL = 'https://appcenter.intuit.com/api/v1/connection/di
 
 var LOGGER = null;
 /**
+
   Provides functionality to negotiate OAuth 1.0a flow for getting an Access token
   from Intuit for QuickBooks Online API access.
   @param oauthCallbackUrl the url to which the application will be redirected upon conclusion
@@ -29,6 +30,7 @@ var LOGGER = null;
       "qyprdCWrJtfoNviKGC8woJ2d7fHJk0",
       "ajEZOsmF1dmpA7PkMYKOBVIDFpkIktovHsjFgAsx");
     helper.
+  @version 1.0.1
 */
 function QboAuthHelper(oauthCallbackUrl, oauthConsumerKey, oauthConsumerSecret, logger){
   this.oauthCallbackUrl = oauthCallbackUrl;
@@ -187,11 +189,15 @@ QboAuthHelper.prototype.disconnect = function(oauthToken, oauthTokenSecret){
       token_secret: oauthTokenSecret
     };
 
+    // var url = createDisconnectUrl(oauthToken);
+    LOGGER.debug('Disconnect requested to: ' + INTUIT_DISCONNECT_URL);
+
     request.get({
       url: INTUIT_DISCONNECT_URL,
       oauth: oauth,
       qs: ''
     }, function(err, resp, body){
+      LOGGER.debug('Disconnect result: \n' + JSON.stringify(body, null, 2));
       if(err){
         reject(err)
       } else {
@@ -200,8 +206,8 @@ QboAuthHelper.prototype.disconnect = function(oauthToken, oauthTokenSecret){
           if(err2){
             reject(err2);
           } else {
-            if(result.PlatformResponse.errorCode!=0){
-              reject( new Error(result.PlatformResponse.errorMessage) );
+            if(result.PlatformResponse.ErrorCode!=0){
+              reject( new Error(result.PlatformResponse.ErrorMessage) );
             } else {
               resolve({ disconnected: true });
             }
@@ -261,6 +267,27 @@ QboAuthHelper.prototype.createAccessTokenUrl = function(tokenSecret, oauthToken,
 
   //Add the signature parm.
   var sig = this.generateSignature('GET', INTUIT_ACCESS_TOKEN_URL, parms, tokenSecret );
+
+  url += '&oauth_signature=' + encodeURIComponent(sig);
+
+  return url;
+}
+
+QboAuthHelper.prototype.createDisconnectUrl = function(oauthToken){
+  var parms = {
+    'oauth_callback' : this.oauthCallbackUrl,
+    'oauth_consumer_key' : this.oauthConsumerKey,
+    'oauth_nonce' : uuid(),
+    'oauth_signature_method' : 'HMAC-SHA1',
+    'oauth_timestamp' : moment().format('X'),
+    'oauth_version' : '1.0',
+    'oauth_token' : oauthToken
+  };
+
+  var url = buildUrl(INTUIT_DISCONNECT_URL, parms);
+
+  //Add the signature parm.
+  var sig = this.generateSignature('GET', INTUIT_DISCONNECT_URL, parms );
 
   url += '&oauth_signature=' + encodeURIComponent(sig);
 

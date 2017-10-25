@@ -1,6 +1,6 @@
 {
   "name": "@apigrate/qbo-oauth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "QuickBooks OAuth helper utility",
   "main": "index.js",
   "dependencies": {
